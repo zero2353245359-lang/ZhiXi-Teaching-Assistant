@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智析教学助手——基于国产大模型的AI学情诊断与分层练习工具 v2.3</title>
+<style>
+:root {
+  --green: #2E7D32; --green-light: #4CAF50; --green-bg: #E8F5E9;
+  --red: #C62828; --red-bg: #FFEBEE; --blue: #1565C0; --blue-bg: #E3F2FD;
+  --white: #fff; --gray: #888; --border: #ddd; --ink: #333;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06); --radius: 10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Microsoft YaHei','PingFang SC',sans-serif; background:#f0f2f5; color:var(--ink); line-height:1.6; }
+.header { background:linear-gradient(135deg,#1B5E20,#2E7D32); color:white; padding:18px 28px; text-align:center; }
+.header h1 { font-size:1.5em; margin-bottom:2px; }
+.header .sub { font-size:0.85em; opacity:0.85; }
+.container { max-width:1200px; margin:0 auto; padding:16px; }
+.card { background:var(--white); border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow); }
+.card h3 { font-size:1em; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.config-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.config-row label { font-weight:bold; font-size:0.85em; white-space:nowrap; }
+.config-row input, .config-row select { padding:7px 10px; border:1px solid var(--border); border-radius:6px; font-size:0.88em; }
+.config-row input[type="password"] { flex:1; min-width:180px; }
+.config-row select { min-width:120px; }
+.btn { padding:7px 14px; border:none; border-radius:6px; cursor:pointer; font-size:0.85em; font-weight:bold; transition:all 0.2s; }
+.btn-green { background:var(--green); color:white; }
+.btn-blue { background:var(--blue); color:white; }
+.btn-sm { padding:5px 10px; font-size:0.8em; }
+.status-tag { font-size:0.8em; padding:3px 10px; border-radius:12px; }
+.status-ok { background:var(--green-bg); color:var(--green); }
+.status-err { background:var(--red-bg); color:var(--red); }
+.scene-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.scene-item { background:var(--white); border-radius:var(--radius); padding:14px; cursor:pointer; border:2px solid transparent; text-align:center; transition:all 0.2s; }
+.scene-item:hover { border-color:var(--green-light); }
+.scene-item.active { border-color:var(--green); background:var(--green-bg); }
+.scene-item .icon { font-size:1.6em; }
+.scene-item .name { font-weight:bold; margin:4px 0; font-size:0.9em; }
+.scene-item .desc { font-size:0.75em; color:var(--gray); }
+.tag-row { display:flex; flex-wrap:wrap; gap:6px; }
+.tag { padding:5px 12px; border-radius:16px; border:1px solid var(--border); cursor:pointer; font-size:0.82em; background:white; transition:all 0.15s; }
+.tag:hover { border-color:var(--green); }
+.tag.selected { background:var(--green); color:white; border-color:var(--green); }
+.tag.ai-generated { border-style:dashed; border-color:var(--blue); }
+.lesson-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.main-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.panel textarea { width:100%; height:180px; border:1px solid var(--border); border-radius:8px; padding:10px; font-size:0.88em; font-family:inherit; resize:vertical; }
+.output-area { background:#fafafa; border:1px solid var(--border); border-radius:8px; padding:14px; min-height:200px; max-height:520px; overflow-y:auto; font-size:0.88em; }
+.output-area .loading { color:var(--gray); text-align:center; padding:50px; }
+.output-area .error { color:var(--red); }
+.output-area h2 { font-size:1.15em; color:var(--green); margin:12px 0 6px; border-bottom:1px solid var(--border); padding-bottom:4px; }
+.output-area h3 { font-size:1.05em; color:var(--ink); margin:10px 0 4px; }
+.output-area ul, .output-area ol { padding-left:20px; margin:6px 0; }
+.output-area li { margin:2px 0; }
+.output-area table { border-collapse:collapse; width:100%; margin:8px 0; }
+.output-area td, .output-area th { border:1px solid var(--border); padding:6px 8px; font-size:0.85em; text-align:left; }
+.output-area th { background:var(--green-bg); font-weight:bold; }
+.output-area code { background:#f0f0f0; padding:1px 4px; border-radius:3px; font-size:0.9em; }
+.output-area pre { background:#f5f5f5; padding:10px; border-radius:6px; overflow-x:auto; font-size:0.85em; white-space:pre-wrap; }
+.output-area strong { color:var(--green); }
+.output-area blockquote { border-left:3px solid var(--green); padding-left:10px; color:var(--gray); margin:8px 0; }
+.prompt-preview { background:#f8f8f8; border:1px dashed var(--border); border-radius:6px; padding:8px; margin-top:8px; font-size:0.78em; color:var(--gray); max-height:100px; overflow-y:auto; white-space:pre-wrap; display:none; }
+.review-badge { background:#FFF3E0; border:1px solid #FF9800; border-radius:6px; padding:7px 10px; margin-top:10px; font-size:0.82em; color:#E65100; }
+.btn-main { display:block; width:100%; padding:12px; border:none; border-radius:var(--radius); font-size:1.05em; font-weight:bold; cursor:pointer; margin:10px 0; }
+.btn-generate { background:var(--green); color:white; }
+.btn-generate:hover { background:#1B5E20; }
+.btn-generate:disabled { background:#bbb; cursor:not-allowed; }
+.btn-copy { background:var(--blue); color:white; padding:5px 12px; border:none; border-radius:6px; cursor:pointer; font-size:0.82em; float:right; }
+@media (max-width:768px) { .scene-row,.main-grid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🌿 智析教学助手——基于国产大模型的AI学情诊断与分层练习工具 <span style="font-size:0.6em;opacity:0.7;">v2.3</span></h1>
+  <div class="sub">学情诊断 · 分层练习 · 概念辨析 · 讲评建议 | DeepSeek & 硅基流动</div>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h3>🔑 API 配置 <span id="connStatus" class="status-tag"></span></h3>
+    <div class="config-row">
+      <label>API Key:</label>
+      <input type="password" id="apiKey" placeholder="sk-...（仅保存在本地浏览器，不会上传）" style="flex:1;min-width:180px;">
+      <label>平台:</label>
+      <select id="apiProvider" onchange="onProvChange()">
+        <option value="deepseek">DeepSeek</option>
+        <option value="siliconflow">硅基流动</option>
+        <option value="custom">自定义URL</option>
+      </select>
+      <label>模型:</label>
+      <select id="modelName"><option value="">请先拉取模型列表</option></select>
+      <button class="btn btn-blue" onclick="fetchModels()">拉取模型</button>
+      <button class="btn btn-green" onclick="saveCfg()">加密保存</button>
+      <button class="btn btn-blue" onclick="testConn()">测试连接</button>
+    </div>
+    <div id="customUrlRow" style="display:none;margin-top:8px;" class="config-row">
+      <label>Chat URL:</label>
+      <input type="text" id="customChatUrl" placeholder="https://your-api.com/v1/chat/completions" style="flex:1;min-width:280px;">
+      <label>Models URL:</label>
+      <input type="text" id="customModelsUrl" placeholder="https://your-api.com/v1/models" style="flex:1;min-width:280px;">
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>场景选择</h3>
+    <div class="scene-row" id="sceneRow">
+      <div class="scene-item active" data-scene="diagnosis" onclick="selectScene(this)">
+        <div class="icon">🔍</div><div class="name">学情诊断</div><div class="desc">分析常见错误+前测题</div>
+      </div>
+      <div class="scene-item" data-scene="practice" onclick="selectScene(this)">
+        <div class="icon">📝</div><div class="name">分层练习</div><div class="desc">A/B/C三层自动生成</div>
+      </div>
+      <div class="scene-item" data-scene="concept" onclick="selectScene(this)">
+        <div class="icon">🔄</div><div class="name">概念辨析</div><div class="desc">光合vs呼吸对比</div>
+      </div>
+      <div class="scene-item" data-scene="lecture" onclick="selectScene(this)">
+        <div class="icon">💡</div><div class="name">讲评建议</div><div class="desc">课堂讲评策略生成</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>知识点设置 <button class="btn btn-blue btn-sm" onclick="fetchTopics()" style="margin-left:8px;">AI生成知识点</button></h3>
+    <div class="lesson-row" style="margin-bottom:8px;">
+      <label>课时:</label>
+      <input type="text" id="lessonName" value="光合作用" style="flex:1;min-width:160px;">
+      <label>学科:</label>
+      <input type="text" id="subject" value="初中生物" style="width:90px;">
+      <label>版本:</label>
+      <input type="text" id="textbookVer" value="人教版七年级192班下册" style="width:130px;">
+      <button class="btn btn-green" onclick="fetchTopics()">生成知识点</button>
+    </div>
+    <div class="tag-row" id="tagRow">
+      <span class="tag selected" data-topic="暗处理目的">暗处理的目的</span>
+      <span class="tag selected" data-topic="遮光对照设计">遮光与见光对照</span>
+      <span class="tag" data-topic="酒精脱色">酒精脱色（水浴加热）</span>
+      <span class="tag" data-topic="碘液检验">碘液检验淀粉</span>
+      <span class="tag" data-topic="光合作用公式">光合作用公式</span>
+      <span class="tag" data-topic="普里斯特利实验">普里斯特利实验</span>
+      <span class="tag" data-topic="合理密植">合理密植</span>
+      <span class="tag" data-topic="呼吸作用对比">光合vs呼吸作用</span>
+    </div>
+    <div id="topicStatus" style="font-size:0.8em;color:var(--gray);margin-top:4px;"></div>
+  </div>
+
+  <div class="main-grid">
+    <div class="card panel">
+      <h3>补充说明（可选）</h3>
+      <textarea id="userInput" placeholder="补充学生具体错误描述、班级情况等...&#10;例如：192班38人，暗处理目的前测正确率约40%..."></textarea>
+      <div class="prompt-preview" id="promptPreview">
+        <strong>提示词预览:</strong>
+        <div id="promptText"></div>
+      </div>
+    </div>
+    <div class="card panel">
+      <h3>AI生成结果 <button class="btn-copy" onclick="copyOut()">复制</button></h3>
+      <div class="output-area" id="outputBox">
+        <div class="loading" style="color:#999;">选择场景和知识点，点击「生成」按钮</div>
+      </div>
+      <div class="review-badge">⚠️ 教师复核提醒：AI输出内容需经教师逐条验证后使用。最终教学决策权归教师所有。</div>
+    </div>
+  </div>
+
+  <button class="btn-main btn-generate" id="btnGenerate" onclick="generate()">调用AI生成</button>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
